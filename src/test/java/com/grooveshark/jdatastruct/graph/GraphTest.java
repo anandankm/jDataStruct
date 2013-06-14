@@ -17,7 +17,15 @@ public class GraphTest
 
     public static final Logger log = Logger.getLogger(GraphTest.class);
     @Test
-    public void testOne()
-    {
+    public void loadGraph() {
+        Graph graph = new Graph();
+        String n1Val = "hong kong";
+        String n2Val = "thailand";
+        Node<String> n1 = new Node<String>(n1Val);
+        Node<String> n2 = new Node<String>(n2Val);
+        graph.addNode(n1);
+        graph.addNode(n2);
+        graph.addEdge(new Edge(n1, n2, 3));
+        System.out.println(graph.toString());
     }
 }
