@@ -27,4 +27,8 @@ public class Edge
         this.weight = weight;
     }
 
+    public String toString() {
+        return "a: " + this.a.value.toString() + ", b: " + this.b.value.toString() + ", w: " + this.weight;
+    }
+
 }
