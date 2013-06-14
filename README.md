@@ -1,4 +1,4 @@
-data-struct
+jDataStruct
 ===========
 
 Implement some interesting data structures
