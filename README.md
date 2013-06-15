@@ -1,4 +1,4 @@
 jDataStruct
 ===========
 
-Implement some interesting data structures
+Implement some data structures.
