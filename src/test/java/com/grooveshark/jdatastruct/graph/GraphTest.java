@@ -15,17 +15,26 @@ import org.apache.log4j.Logger;
 public class GraphTest 
 {
 
+    public Graph<String> graph = new Graph<String>();
     public static final Logger log = Logger.getLogger(GraphTest.class);
     @Test
     public void loadGraph() {
-        Graph graph = new Graph();
-        String n1Val = "hong kong";
-        String n2Val = "thailand";
-        Node<String> n1 = new Node<String>(n1Val);
-        Node<String> n2 = new Node<String>(n2Val);
-        graph.addNode(n1);
-        graph.addNode(n2);
-        graph.addEdge(new Edge(n1, n2, 3));
-        System.out.println(graph.toString());
+        this.graph.setDirected(true);
+        this.addNodes("hongkong", "thailand", 3);
+        this.addNodes("thailand", "singapore", 1);
+        this.addNodes("hongkong", "malaysia", 4);
+        this.addNodes("malaysia", "singapore", 1);
+        this.addNodes("hongkong", "singapore", 4);
+        this.addNodes("singapore", "hongkong", 1);
+        this.addNodes("thailand", "hongkong", 2);
+        this.addNodes("thailand", "malaysia", 2);
+        this.addNodes("singapore", "japan", 10);
+        System.out.println(this.graph.toString());
+    }
+
+    public void addNodes(String n1Val, String n2Val, int weight) {
+        Node<String> n1 = this.graph.addNode(n1Val);
+        Node<String> n2 = this.graph.addNode(n2Val);
+        this.graph.addEdge(new Edge(n1, n2, weight));
     }
 }
