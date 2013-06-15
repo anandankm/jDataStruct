@@ -27,6 +27,30 @@ public class Edge
         this.weight = weight;
     }
 
+    public Node getNodeA() {
+        return this.a;
+    }
+
+    public Node getNodeB() {
+        return this.b;
+    }
+
+    public void setNodeA(Node a) {
+        this.a = a;
+    }
+
+    public void setNodeB(Node b) {
+        this.b = b;
+    }
+
+    public void addBToA() {
+        this.a.addToAdj(b);
+    }
+
+    public void addAToB() {
+        this.b.addToAdj(a);
+    }
+
     public String toString() {
         return "a: " + this.a.value.toString() + ", b: " + this.b.value.toString() + ", w: " + this.weight;
     }
