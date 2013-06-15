@@ -32,7 +32,11 @@ public class Node<T extends Comparable<T>> implements Comparable<Node<T>>
     }
 
     public String toString() {
-        return "value: " + this.value.toString();
+        return "{adjNodesSize:" + this.adjNodes.size() + "}";
+    }
+
+    public boolean addToAdj(Node o) {
+        return this.adjNodes.add(o);
     }
 
     /**
