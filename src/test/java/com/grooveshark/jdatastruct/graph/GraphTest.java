@@ -12,7 +12,7 @@ import static org.junit.Assert.fail;
 
 import org.apache.log4j.Logger;
 
-public class GraphTest 
+public class GraphTest
 {
 
     public Graph<String> graph = new Graph<String>();
@@ -36,5 +36,29 @@ public class GraphTest
         Node<String> n1 = this.graph.addNode(n1Val);
         Node<String> n2 = this.graph.addNode(n2Val);
         this.graph.addEdge(new Edge(n1, n2, weight));
+    }
+
+    public void neo4jTest() {
+        EmbedNeo4j e = null;
+        try {
+            e = new EmbedNeo4j();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            fail("Failed to initialize database: " + ex.getMessage());
+        }
+        e.createDb();
+        e.shutDown();
+    }
+
+    @Test
+    public void neo4jRestTest() {
+        RestNeo4j e = null;
+        try {
+            e = new RestNeo4j();
+            e.createExampleNodes();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            fail("Failed to initialize database: " + ex.getMessage());
+        }
     }
 }
