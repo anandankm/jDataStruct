@@ -60,6 +60,12 @@
             <artifactId>neo4j-rest-graphdb</artifactId>
             <version>1.9</version>
         </dependency>
+        <!-- jUtils Repo -->
+        <dependency>
+            <groupId>com.grooveshark.util</groupId>
+            <artifactId>jUtils</artifactId>
+            <version>1.0</version>
+        </dependency>
     </dependencies>
     <build>
          <!-- Copy the test resources over -->
