@@ -4,8 +4,11 @@ import org.neo4j.rest.graphdb.RestAPIFacade;
 import org.neo4j.rest.graphdb.ExecutingRestAPI;
 import org.neo4j.rest.graphdb.RestAPI;
 import org.neo4j.rest.graphdb.RequestResult;
+import org.neo4j.rest.graphdb.RestRequest;
+import org.neo4j.rest.graphdb.batch.RecordingRestRequest;
 import org.neo4j.rest.graphdb.batch.BatchRestAPI;
 import org.neo4j.rest.graphdb.batch.BatchCallback;
+import org.neo4j.rest.graphdb.batch.RestOperations;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.entity.RestNode;
 import org.neo4j.rest.graphdb.entity.RestRelationship;
@@ -42,7 +45,7 @@ public class RestNeo4j
     public static final Logger log = Logger.getLogger(RestNeo4j.class);
 
     private static enum RelTypes implements RelationshipType { KNOWS };
-    private static final String SERVER_ROOT_URI = "http://172.16.100.198:7474/db/data";
+    private static final String SERVER_ROOT_URI = "http://localhost:7474/db/data";
     private RestAPIFacade restAPI = null;
     private BatchRestAPI batchRestAPI = null;
     private RestGraphDatabase graphDb = null;
@@ -104,6 +107,7 @@ public class RestNeo4j
             hits.close();
         }
     }
+
     public void countRelationships() throws Exception {
         Iterator<Node> itr = this.graphDb.getAllNodes().iterator();
         int relSize = 0;
@@ -230,20 +234,23 @@ public class RestNeo4j
     }
 
     public void batchInsertCheck(final String index, final String key, final Integer node, final List<Integer> knowsNodes) {
-        BatchResult batchResult = this.restAPI.executeBatch( new BatchCallback<BatchResult>() {
-            @Override
-            public BatchResult recordBatch(RestAPI batchRestAPI) {
-                BatchResult batchResult = new BatchResult();
-                batchResult.insertedNodes = new LinkedList<RestNode>();
-                RestIndex<Node> restIndex = batchRestAPI.index().forNodes(index);
-                final Map<String, Object> data = map("key", key, "value", node, "properties", null);
-                System.out.println("data: " + data);
-                BatchRestAPI eRestAPI = new BatchRestAPI(batchRestAPI.getBaseUri(), new RestAPIFacade(batchRestAPI.getBaseUri()));
-                final RequestResult result = eRestAPI.getRestRequest().post(restIndex.uniqueIndexPath(), data);
-                System.out.println("Status: " + result.getStatus());
-                return batchResult;
-            }
-        });
+        RestIndex<Node> restIndex = batchRestAPI.index().forNodes(index);
+        final Map<String, Object> data = map("key", key, "value", node, "properties", null);
+        System.out.println("data: " + data);
+        System.out.println("uri: " + batchRestAPI.getBaseUri());
+        RestRequest restRequest = this.batchRestAPI.getRestRequest();
+        System.out.println("RestRequest Class: " + restRequest.getClass().getCanonicalName());
+        RequestResult result = restRequest.post(restIndex.uniqueIndexPath(), data);
+        RestOperations restOperations = this.batchRestAPI.getRecordedOperations();
+        Map<Long, RestOperations.RestOperation> operationMap = restOperations.getRecordedRequests();
+        for (long batchId : operationMap.keySet()) {
+            RestOperations.RestOperation restOperation = operationMap.get(batchId);
+            System.out.println("BatchId: " + restOperation.getBatchId() + "; batchId: " + batchId + "; data: " + restOperation.getData() );
+            System.out.println("Uri: " + restOperation.getUri() + "; baseuri: " + restOperation.getBaseUri() );
+        }
+        this.batchRestAPI.executeBatchRequest();
+        System.out.println("Status: " + result.getStatus());
+        System.out.println("Text: " + result.getText());
     }
 
     public void batchInsertKnows(final String index, final String key, final Integer node, final List<Integer> knowsNodes) {
