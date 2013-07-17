@@ -3,6 +3,8 @@ package com.grooveshark.jdatastruct.graph;
 import java.sql.Types;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Arrays;
@@ -10,6 +12,7 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.fail;
+import com.grooveshark.jdatastruct.graph.entity.UserInfo;
 
 import org.apache.log4j.Logger;
 
@@ -62,10 +65,11 @@ public class GraphTest
             fail("Failed to initialize database: " + ex.getMessage());
         }
         try{
+            String query = "userid:[0 TO 100]";
             //e.createDb();
             //e.removeData();
             //e.lookupSize();
-            e.checkIndexHits();
+            e.checkIndexHits(query);
             e.shutDown();
         } catch (Exception ex) {
             ex.printStackTrace();
@@ -91,36 +95,44 @@ public class GraphTest
         }
     }
 
-    @Test
     public void neo4jRestIndexTest() {
         try {
             //this.e.checkIndex(1, 20);
             //this.e.checkIndex(1, 21);
             //this.e.checkIndexHits();
-            this.e.countRelationships();
-            //this.e.deleteAll();
+            //this.e.countRelationships();
+            this.e.deleteAll();
         } catch (Exception ex) {
             ex.printStackTrace();
             fail("Failed to check index: " + ex.getMessage());
         }
     }
 
+    @Test
     public void neo4jRestBatchTest() {
         try {
-            String index = "users";
+            String nodeIndex = "users";
+            String relIndex = "followers";
             String key = "userid";
-            Integer node = 1;
-            List<Integer> knowsNodes = new LinkedList<Integer>();
-            knowsNodes.add(2);
-            knowsNodes.add(3);
-            knowsNodes.add(4);
-            knowsNodes.add(5);
-            knowsNodes.add(6);
-            knowsNodes.add(7);
-            knowsNodes.add(8);
-            knowsNodes.add(9);
-            knowsNodes.add(10);
-            this.e.batchInsertKnows(index, key, node, knowsNodes);
+            Map<String, String> startProps = new HashMap<String, String>();
+            startProps.put("username", "paulo");
+            startProps.put("fname", "Paulo Da Silva");
+            startProps.put("lname", "");
+            startProps.put("mname", "R");
+            startProps.put("city", "Sao Paulo");
+            startProps.put("state", "");
+            startProps.put("country", "BR");
+            startProps.put("email", "paulothesilva@gmail.com");
+            Map<String, String> endProps = new HashMap<String, String>();
+            endProps.put("username", "josh");
+            endProps.put("fname", "Josh Greenberg");
+            endProps.put("lname", "");
+            endProps.put("mname", "");
+            endProps.put("city", "Gainesville");
+            endProps.put("state", "FL");
+            endProps.put("country", "US");
+            endProps.put("email", "josh.greenberg@escapemg.com");
+            this.e.batchInsertCheck(nodeIndex, relIndex, key, 1, startProps, 2, endProps);
         } catch (Exception ex) {
             ex.printStackTrace();
             fail("Failed to insert nodes off of the batch: " + ex.getMessage());
