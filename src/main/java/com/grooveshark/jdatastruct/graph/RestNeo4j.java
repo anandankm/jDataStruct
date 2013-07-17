@@ -17,6 +17,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
@@ -44,12 +45,14 @@ public class RestNeo4j
     private static final String SERVER_ROOT_URI = "http://172.16.100.198:7474/db/data";
     private RestAPIFacade restAPI = null;
     private BatchRestAPI batchRestAPI = null;
+    private RestGraphDatabase graphDb = null;
 
     private String url = null;
 
     public RestNeo4j() {
         this.restAPI = new RestAPIFacade(SERVER_ROOT_URI);
         this.batchRestAPI = new BatchRestAPI(SERVER_ROOT_URI, this.restAPI);
+        this.graphDb = new RestGraphDatabase(this.restAPI);
     }
 
     public void createExampleNodes() {
@@ -64,10 +67,16 @@ public class RestNeo4j
         }
     }
 
-    public void checkIndexHits() throws Exception {
+    public void checkIndexHits(String query) throws Exception {
         RestIndex<Node> usersIndex = this.restAPI.index().forNodes("users");
-        IndexHits<Node> hits = usersIndex.query(QueryContext.numericRange("userid", 0, 100));
+        IndexHits<Node> hits = usersIndex.query(query);
         System.out.println("Node size: " + hits.size());
+        try {
+            for (Node userNode : hits) {
+            }
+        } finally {
+            hits.close();
+        }
     }
 
     public void checkIndex(int uid1, int uid2) {
@@ -96,8 +105,7 @@ public class RestNeo4j
         }
     }
     public void countRelationships() throws Exception {
-        RestGraphDatabase restGraph = new RestGraphDatabase(this.restAPI);
-        Iterator<Node> itr = restGraph.getAllNodes().iterator();
+        Iterator<Node> itr = this.graphDb.getAllNodes().iterator();
         int relSize = 0;
         int nodeSize = 0;
         while (itr.hasNext()) {
@@ -117,8 +125,7 @@ public class RestNeo4j
 
 
     public void lookupSize() throws Exception {
-        RestGraphDatabase restGraph = new RestGraphDatabase(this.restAPI);
-        Iterator<Node> itr = restGraph.getAllNodes().iterator();
+        Iterator<Node> itr = this.graphDb.getAllNodes().iterator();
         HashMap<Integer, Node> nodeMap = new HashMap<Integer, Node>();
         int nodeSize = 0;
         int relSize = 0;
@@ -165,8 +172,7 @@ public class RestNeo4j
     }
 
     public void traverseAll() {
-        RestGraphDatabase restGraph = new RestGraphDatabase(this.restAPI);
-        Iterator<Node> itr = restGraph.getAllNodes().iterator();
+        Iterator<Node> itr = this.graphDb.getAllNodes().iterator();
         while (itr.hasNext()) {
             Node node = (Node) itr.next();
             Iterator<String> keysItr = node.getPropertyKeys().iterator();
@@ -183,25 +189,44 @@ public class RestNeo4j
         }
     }
 
-    public void deleteAll() {
-        RestGraphDatabase restGraph = new RestGraphDatabase(this.restAPI);
-        Iterator<Node> itr = restGraph.getAllNodes().iterator();
-        while (itr.hasNext()) {
-            Node node = (Node) itr.next();
-            Iterator<String> keysItr = node.getPropertyKeys().iterator();
-            while (keysItr.hasNext()) {
-                String key = (String) keysItr.next();
-                System.out.println("UserNode property key: " + key);
-                System.out.println("UserNode property " + key + ": " + node.getProperty( key ));
-            }
+    public int deleteNode(Node node) {
+        int numRel = 0;
+        Transaction tx = this.graphDb.beginTx();
+        try {
             Iterator<Relationship> relItr = node.getRelationships().iterator();
             while (relItr.hasNext()) {
                 Relationship rel = (Relationship) relItr.next();
-                System.out.println("User1Node has a relationship with property: " + rel.getProperty( this.getSinglePropertyKey(rel)  ));
+                Node startNode = rel.getStartNode();
+                Node endNode = rel.getEndNode();
                 rel.delete();
+                numRel++;
             }
             node.delete();
+            tx.success();
+        } finally {
+            tx.finish();
         }
+        return numRel;
+    }
+
+
+    public void deleteAll() {
+        Iterator<Node> itr = this.graphDb.getAllNodes().iterator();
+        int nodeSize = 0;
+        int relSize = 0;
+        System.out.println("Removing Data..");
+        while (itr.hasNext()) {
+            Node node = (Node) itr.next();
+            relSize += this.deleteNode(node);
+            nodeSize++;
+            if (nodeSize%500 == 0) {
+                System.out.println("Node size: " + nodeSize);
+                System.out.println("Relationship size: " + relSize);
+            }
+        }
+        System.out.println("Number of nodes: " + nodeSize);
+        System.out.println("Number of relationships: " + relSize);
+        System.out.println("Data removed.");
     }
 
     public void batchInsertCheck(final String index, final String key, final Integer node, final List<Integer> knowsNodes) {
