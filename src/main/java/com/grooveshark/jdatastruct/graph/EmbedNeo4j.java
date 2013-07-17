@@ -11,6 +11,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import org.apache.log4j.Logger;
@@ -26,16 +27,24 @@ public class EmbedNeo4j
     public static final Logger log = Logger.getLogger(EmbedNeo4j.class);
     private static enum RelTypes implements RelationshipType { KNOWS };
 
-    private String db_path = "";
+    private String basePath = "";
+    private String dbDir = "data/graph.db";
+    private String dbPath = "";
+
+    private String propertiesFile = "conf/neo4j.properties";
 
     private GraphDatabaseService graphDb;
+    private GraphDatabaseBuilder dbBuilder;
     private Node firstNode;
     private Node secondNode;
     private Relationship relationship;
 
-    public EmbedNeo4j(String db_path) {
-        this.db_path = db_path;
-        this.graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( this.db_path );
+    public EmbedNeo4j(String basePath) {
+        this.basePath = basePath;
+        this.dbPath = this.basePath + "/" + this.dbDir;
+        this.dbBuilder = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( this.dbPath );
+        this.dbBuilder.loadPropertiesFromFile(this.basePath + "/" + this.propertiesFile);
+        this.graphDb = this.dbBuilder.newGraphDatabase();
         registerShutdownHook(this.graphDb);
     }
 
@@ -73,10 +82,30 @@ public class EmbedNeo4j
         return key;
     }
 
-    public void checkIndexHits() throws Exception {
+    public void checkIndexHits(String query) throws Exception {
         Index<Node> usersIndex = this.graphDb.index().forNodes("users");
-        IndexHits<Node> hits = usersIndex.query("userid:[0 TO 300000000]");
+        IndexHits<Node> hits = usersIndex.query(query);
         System.out.println("Node size: " + hits.size());
+    }
+
+    public void countRelationships() throws Exception {
+        GlobalGraphOperations ggo = GlobalGraphOperations.at(this.graphDb);
+        Iterator<Node> itr = ggo.getAllNodes().iterator();
+        int relSize = 0;
+        int nodeSize = 0;
+        while (itr.hasNext()) {
+            Node node = (Node) itr.next();
+            for(Relationship rel : node.getRelationships(Direction.OUTGOING)) {
+                relSize++;
+            }
+            nodeSize++;
+            if (nodeSize%50000 == 0) {
+                System.out.println("Node size: " + nodeSize);
+                System.out.println("Rela size: " + relSize);
+            }
+        }
+        System.out.println("Number of nodes: " + nodeSize);
+        System.out.println("Number of relationships: " + relSize);
     }
 
     public void lookupSize() throws Exception {
