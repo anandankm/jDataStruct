@@ -49,6 +49,7 @@ public class RestNeo4j
     private static final String SERVER_ROOT_URI = "http://localhost:7474/db/data";
     private RestAPIFacade restAPI = null;
     private BatchRestAPI batchRestAPI = null;
+    private RestRequest restRequest = null;
     private RestGraphDatabase graphDb = null;
 
     private String url = null;
@@ -56,6 +57,7 @@ public class RestNeo4j
     public RestNeo4j() {
         this.restAPI = new RestAPIFacade(SERVER_ROOT_URI);
         this.batchRestAPI = new BatchRestAPI(SERVER_ROOT_URI, this.restAPI);
+        this.restRequest = this.batchRestAPI.getRestRequest();
         this.graphDb = new RestGraphDatabase(this.restAPI);
     }
 
@@ -239,26 +241,28 @@ public class RestNeo4j
 
     public <T extends PropertyContainer> void addPropsToIndex(T entity, final Map<String, String> props, RestIndex<T> index) {
         for (String key : props.keySet()) {
-            this.batchRestAPI.addToIndex(entity, index, key, props.get(key));
+            final RestEntity restEntity = (RestEntity) entity;
+            final Map<String, Object> data = map("key", key, "value", props.get(key), "uri", restEntity.getUri());
+            this.restRequest.post(index.indexPath(), data);
         }
     }
 
+
     public void batchInsertCheck(final String nodeInd, final String relInd, final String key, final int startValue, final Map<String, String> startProps, final int endValue, final Map<String, String> endProps) {
         RestIndex<Node> nodeIndex = this.batchRestAPI.index().forNodes(nodeInd);
-        RestRequest restRequest = this.batchRestAPI.getRestRequest();
         Map<String, Object> startData = map("key", key, "value", startValue, "properties", startProps);
         Map<String, Object> endData = map("key", key, "value", endValue, "properties", endProps);
         System.out.println("start data: " + startData);
         System.out.println("end data: " + endData);
-        System.out.println("uniqueIndexpath: " + nodeIndex.uniqueIndexPath());
-        RequestResult result = restRequest.post(nodeIndex.uniqueIndexPath(), startData);
+        System.out.println("uniqueIndexpath: " + nodeIndex.indexPath() + "?uniqueness=get_or_create");
+        RequestResult result = this.restRequest.post(nodeIndex.indexPath() + "?uniqueness=get_or_create", startData);
         RestNode startNode = this.batchRestAPI.createRestNode(result);
         this.addPropsToIndex(startNode, startProps, nodeIndex);
         System.out.println("BatchId: " + result.getBatchId());
         System.out.println("Status: " + result.getStatus());
         System.out.println("Text: " + result.getText());
 
-        result = restRequest.post(nodeIndex.uniqueIndexPath(), endData);
+        result = this.restRequest.post(nodeIndex.uniqueIndexPath(), endData);
         RestNode endNode = this.batchRestAPI.createRestNode(result);
         this.addPropsToIndex(endNode, endProps, nodeIndex);
         System.out.println("BatchId: " + result.getBatchId());
@@ -271,7 +275,8 @@ public class RestNeo4j
         Map<String, Object> relProps = map("name", "follows");
         Map<String, Object> relData = map("key", relKey, "value", relValue, "properties", relProps, "start", startNode.getUri(), "end", endNode.getUri(), "type", "KNOWS");
         System.out.println("rel data: " + relData);
-        result = restRequest.post(relIndex.uniqueIndexPath(), relData);
+        System.out.println("unique index path: " + relIndex.indexPath() + "?uniqueness=get_or_create");
+        result = this.restRequest.post(relIndex.indexPath() + "?uniqueness=get_or_create", relData);
 
         System.out.println("BatchId: " + result.getBatchId());
         System.out.println("Status: " + result.getStatus());
