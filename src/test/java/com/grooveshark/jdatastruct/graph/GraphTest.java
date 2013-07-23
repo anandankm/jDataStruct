@@ -12,7 +12,6 @@ import java.util.Arrays;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.fail;
-import com.grooveshark.jdatastruct.graph.entity.UserInfo;
 
 import org.apache.log4j.Logger;
 
@@ -114,7 +113,7 @@ public class GraphTest
             String nodeIndex = "users";
             String relIndex = "followers";
             String key = "userid";
-            Map<String, String> startProps = new HashMap<String, String>();
+            Map<String, Object> startProps = new HashMap<String, Object>();
             startProps.put("username", "paulo");
             startProps.put("fname", "Paulo Da Silva");
             startProps.put("lname", "");
@@ -123,7 +122,12 @@ public class GraphTest
             startProps.put("state", "");
             startProps.put("country", "BR");
             startProps.put("email", "paulothesilva@gmail.com");
-            Map<String, String> endProps = new HashMap<String, String>();
+            long zip = 32607L;
+            startProps.put("zip", zip);
+            String isactive = "false";
+            boolean isact = Boolean.parseBoolean(isactive);
+            startProps.put("isactive", isact);
+            Map<String, Object> endProps = new HashMap<String, Object>();
             endProps.put("username", "josh");
             endProps.put("fname", "Josh Greenberg");
             endProps.put("lname", "");
@@ -132,6 +136,7 @@ public class GraphTest
             endProps.put("state", "FL");
             endProps.put("country", "US");
             endProps.put("email", "josh.greenberg@escapemg.com");
+            endProps.put("zip", zip);
             this.e.batchInsertCheck(nodeIndex, relIndex, key, 1, startProps, 2, endProps);
         } catch (Exception ex) {
             ex.printStackTrace();
