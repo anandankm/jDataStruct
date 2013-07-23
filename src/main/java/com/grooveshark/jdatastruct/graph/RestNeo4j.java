@@ -239,7 +239,7 @@ public class RestNeo4j
     public void batchCreateNode(final String nodeInd, final String key, final int value, final Map<String, String> props) {
     }
 
-    public <T extends PropertyContainer> void addPropsToIndex(T entity, final Map<String, String> props, RestIndex<T> index) {
+    public <T extends PropertyContainer> void addPropsToIndex(T entity, final Map<String, Object> props, RestIndex<T> index) {
         for (String key : props.keySet()) {
             final RestEntity restEntity = (RestEntity) entity;
             final Map<String, Object> data = map("key", key, "value", props.get(key), "uri", restEntity.getUri());
@@ -248,7 +248,7 @@ public class RestNeo4j
     }
 
 
-    public void batchInsertCheck(final String nodeInd, final String relInd, final String key, final int startValue, final Map<String, String> startProps, final int endValue, final Map<String, String> endProps) {
+    public void batchInsertCheck(final String nodeInd, final String relInd, final String key, final int startValue, final Map<String, Object> startProps, final int endValue, final Map<String, Object> endProps) {
         RestIndex<Node> nodeIndex = this.batchRestAPI.index().forNodes(nodeInd);
         Map<String, Object> startData = map("key", key, "value", startValue, "properties", startProps);
         Map<String, Object> endData = map("key", key, "value", endValue, "properties", endProps);
@@ -282,7 +282,7 @@ public class RestNeo4j
         System.out.println("Status: " + result.getStatus());
         System.out.println("Text: " + result.getText());
 
-        this.batchRestAPI.executeBatchRequest();
+        //this.batchRestAPI.executeBatchRequest();
         /*
         RestOperations restOperations = this.batchRestAPI.getRecordedOperations();
         Map<Long, RestOperations.RestOperation> operationMap = restOperations.getRecordedRequests();
