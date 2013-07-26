@@ -5,6 +5,9 @@ import java.util.LinkedList;
 import java.util.HashMap;
 import java.io.IOException;
 
+import com.grooveshark.jdatastruct.graph.sample.entities.Location;
+import com.grooveshark.jdatastruct.graph.sample.entities.GNode;
+import com.grooveshark.jdatastruct.graph.sample.entities.GEdge;
 import com.grooveshark.util.FileUtils;
 import com.grooveshark.util.StringUtils;
 
@@ -27,12 +30,6 @@ public class NodeParser
     public Location baseLocation;
     public Location closeLocation;
     public Location farLocation;
-
-    public class Location {
-        String city;
-        Float latitude;
-        Float longitude;
-    }
 
     public NodeParser(String nodeFile, String locationFile) throws IOException {
         this.locationLines = FileUtils.readFile(locationFile);
@@ -57,6 +54,8 @@ public class NodeParser
                 location.city = lineSplits[1].trim();
                 location.latitude = Float.parseFloat(lineSplits[2].trim());
                 location.longitude = Float.parseFloat(lineSplits[3].trim());
+                location.state = lineSplits[4].trim();
+                location.country = lineSplits[5].trim();
                 if (desc.equalsIgnoreCase("Base")) {
                     this.baseLocation = location;
                 } else if (desc.equalsIgnoreCase("Close")) {
@@ -132,6 +131,8 @@ public class NodeParser
         node.city = location.city;
         node.latitude = location.latitude;
         node.longitude = location.longitude;
+        node.state = location.state;
+        node.country = location.country;
     }
 
     public void createEdges(String type, int sUserid, int eUserid) {
