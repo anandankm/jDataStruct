@@ -1,6 +1,7 @@
 package com.grooveshark.jdatastruct.graph.sample;
 
 
+import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.fail;
 
@@ -11,39 +12,36 @@ public class SampleNodeTest
 {
     public static final Logger log = Logger.getLogger(SampleNodeTest.class);
 
-    public static final String nodeFile = "data/node_file";
-    public static final String locationFile = "data/location_file";
+    public static final String NODE_FILE = "data/node_file";
+    public static final String LOCATION_FILE = "data/location_file";
+    public static final String SERVER_URI = "http://localhost:7474/db/data";
+    public static final String NODE_INDEX = "users";
+    public static final String NODE_KEY = "userid";
+    public static final String INDEX_TEXT_KEY = "indexText";
 
-    @Test
-    public void testNodeParser() {
+    private NodeParser parser;
+
+    @Before
+    public void nodeParser() {
         try {
-            NodeParser parser = new NodeParser(nodeFile, locationFile);
-            parser.displayNodes();
-            parser.displayEdges();
+            System.out.println("Parsing node & location files");
+            this.parser = new NodeParser(NODE_FILE, LOCATION_FILE);
         } catch (Exception ex) {
             ex.printStackTrace();
             fail("Failed to test node parser: " + ex.getMessage());
         }
     }
 
-    public void testNodeFields() {
-        try {
-            System.out.println("Fields in Node class: " + StringUtils.getFieldNames(GNode.class));
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            fail("Failed to test node fields: " + ex.getMessage());
-        }
-    }
-
+    @Test
     public void testNeo4jRest() {
         try {
-            String serverUri = "http://localhost:7474/db/data";
-            String nodeInd = "users";
-            String nodeKey = "userid";
-            String indexTextKey = "indexText";
-            Neo4jRest server = new Neo4jRest(serverUri, nodeInd);
-            server.setNodeKey(nodeKey);
-            server.setIndexTextKey(indexTextKey);
+            System.out.println("Setting up server");
+            Neo4jRest server = new Neo4jRest(SERVER_URI, NODE_INDEX);
+            server.setNodeKey(NODE_KEY);
+            server.setIndexTextKey(INDEX_TEXT_KEY);
+            System.out.println("Creating batch insert request");
+            server.batchInsert(this.parser.nodes);
+            System.out.println("Done.");
         } catch (Exception ex) {
             ex.printStackTrace();
             fail("Failed to test neo4j rest instantiation: " + ex.getMessage());
