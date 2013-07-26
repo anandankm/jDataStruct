@@ -1,10 +1,10 @@
 package com.grooveshark.jdatastruct.graph.sample;
 
-public class Edge
+public class GEdge
 {
     public int sUserid;
     public int eUserid;
-    public Edge(int sUserid, int eUserid) {
+    public GEdge(int sUserid, int eUserid) {
         this.sUserid = sUserid;
         this.eUserid = eUserid;
     }
