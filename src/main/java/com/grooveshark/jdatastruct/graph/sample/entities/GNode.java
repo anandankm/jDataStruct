@@ -1,4 +1,4 @@
-package com.grooveshark.jdatastruct.graph.sample;
+package com.grooveshark.jdatastruct.graph.sample.entities;
 
 
 import java.util.Map;
