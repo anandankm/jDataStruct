@@ -1,0 +1,48 @@
+userid	username
+
+1	Anandan
+2	Yoni Mutual Close
+3	Yoni Mutual Far
+4	Yoni Following Close
+5	Yoni Following Far
+6	Yoni Follower Close
+7	Yoni Follower Far
+
+8	Yoni Mutual Close Mutual Close
+9	Yoni Mutual Far Mutual Close
+10	Yoni Mutual Close Mutual Far
+11	Yoni Mutual Far Mutual Far
+12	Yoni Mutual Close Following Close
+13	Yoni Mutual Far Following Close
+14	Yoni Mutual Close Following Far
+15	Yoni Mutual Far Following Far
+16	Yoni Mutual Close Follower Close
+17	Yoni Mutual Far Follower Close
+18	Yoni Mutual Close Follower Far
+19	Yoni Mutual Far Follower Far
+
+20	Yoni Following Close Mutual Close
+21	Yoni Following Far Mutual Close
+22	Yoni Following Close Mutual Far
+23	Yoni Following Far Mutual Far
+24	Yoni Following Close Following Close
+25	Yoni Following Far Following Close
+26	Yoni Following Close Following Far
+27	Yoni Following Far Following Far
+28	Yoni Following Close Follower Close
+29	Yoni Following Far Follower Close
+30	Yoni Following Close Follower Far
+31	Yoni Following Far Follower Far
+
+32	Yoni Follower Close Mutual Close
+33	Yoni Follower Far Mutual Close
+34	Yoni Follower Close Mutual Far
+35	Yoni Follower Far Mutual Far
+36	Yoni Follower Close Follower Close
+37	Yoni Follower Far Follower Close
+38	Yoni Follower Close Follower Far
+39	Yoni Follower Far Follower Far
+40	Yoni Follower Close Following Close
+41	Yoni Follower Far Following Close
+42	Yoni Follower Close Following Far
+43	Yoni Follower Far Following Far
