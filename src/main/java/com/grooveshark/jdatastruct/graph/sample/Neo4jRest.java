@@ -29,6 +29,7 @@ import org.neo4j.index.lucene.QueryContext;
 
 import com.sun.jersey.api.client.ClientResponse;
 import com.grooveshark.util.FileUtils;
+import com.grooveshark.jdatastruct.graph.sample.entities.GNode;
 
 import java.util.Iterator;
 import java.util.List;
@@ -55,6 +56,8 @@ public class Neo4jRest
     private RestIndex<Relationship> relIndex = null;
     private String nodeKey = null;
     private String indexTextKey = null;
+    private String nodeIndexUniquePath = null;
+    private String relIndexUniquePath = null;
 
     private String url = null;
 
@@ -88,6 +91,7 @@ public class Neo4jRest
             throw new Neo4jRestException("Batch Rest API is not instantiated");
         }
         this.nodeIndex = this.batchRestAPI.index().forNodes(nodeInd);
+        this.nodeIndexUniquePath = this.nodeIndex.indexPath() + "?uniqueness=get_or_create";
     }
 
     public void setRelIndex(String relInd)
@@ -97,6 +101,7 @@ public class Neo4jRest
             throw new Neo4jRestException("Batch Rest API is not instantiated");
         }
         this.relIndex = (RestIndex<Relationship>) this.batchRestAPI.index().forRelationships(relInd);
+        this.relIndexUniquePath = this.relIndex.indexPath() + "?uniqueness=get_or_create";
     }
 
     public void checkIndexHits(String query) throws Exception {
@@ -110,11 +115,15 @@ public class Neo4jRest
 
     public void addToRestRequest(GNode node) {
         Map<String, Object> nodeData = map("key", this.nodeKey, "value", node.userid, "properties", node.getProps());
-        RequestResult result = this.restRequest.post(this.nodeIndex.indexPath() + "?uniqueness=get_or_create", nodeData);
+        RequestResult result = this.restRequest.post(this.nodeIndexUniquePath, nodeData);
         RestNode restNode = this.batchRestAPI.createRestNode(result);
         RestEntity restEntity = (RestEntity) restNode;
         String uri = restEntity.getUri();
         Map<String, Object> data = map("key", this.indexTextKey, "value", node.getIndexText(), "uri", uri);
+        System.out.println("node post data:");
+        System.out.println(nodeData);
+        System.out.println("index post data:");
+        System.out.println(data);
         this.restRequest.post(this.nodeIndex.indexPath(), data);
     }
 
@@ -122,7 +131,7 @@ public class Neo4jRest
         for (GNode node :  nodes) {
             this.addToRestRequest(node);
         }
-        this.batchRestAPI.executeBatchRequest();
+        //this.batchRestAPI.executeBatchRequest();
     }
 
     /**
