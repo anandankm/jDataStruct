@@ -236,9 +236,6 @@ public class RestNeo4j
         System.out.println("Data removed.");
     }
 
-    public void batchCreateNode(final String nodeInd, final String key, final int value, final Map<String, String> props) {
-    }
-
     public <T extends PropertyContainer> void addPropsToIndex(T entity, final Map<String, Object> props, RestIndex<T> index) {
         for (String key : props.keySet()) {
             final RestEntity restEntity = (RestEntity) entity;
