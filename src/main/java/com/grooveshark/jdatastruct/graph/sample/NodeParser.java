@@ -94,13 +94,12 @@ public class NodeParser
                 int userid = Integer.parseInt(splits[0]);
                 String username = splits[1].trim();
                 GNode node = new GNode(userid, username);
-                setFakeProperties(node);
                 this.nodes.add(node);
                 String[] usernameSplits = node.username.split(" ");
                 int uslen = usernameSplits.length;
                 if (uslen == 1) {
                     this.baseNode = node;
-                    this.setLocation(node, this.baseLocation);
+                    this.baseNode.location = this.baseLocation;
                 } else if (uslen == 3) {
                     String type = usernameSplits[1].trim();
                     this.createEdges(type, this.baseNode.userid, userid);
@@ -116,23 +115,16 @@ public class NodeParser
                 }
                 if (uslen > 1) {
                     if (usernameSplits[uslen-1].equalsIgnoreCase("Close")) {
-                        this.setLocation(node, this.closeLocation);
+                        node.location = this.closeLocation;
                     } else if (usernameSplits[uslen-1].equalsIgnoreCase("Far")) {
-                        this.setLocation(node, this.farLocation);
+                        node.location = this.farLocation;
                     }
                 }
+                setFakeProperties(node);
             } else {
                 continue;
             }
         }
-    }
-
-    public void setLocation(GNode node, Location location) {
-        node.city = location.city;
-        node.latitude = location.latitude;
-        node.longitude = location.longitude;
-        node.state = location.state;
-        node.country = location.country;
     }
 
     public void createEdges(String type, int sUserid, int eUserid) {
@@ -151,9 +143,7 @@ public class NodeParser
         node.fname =  node.userid + " First Name";
         node.lname =  node.userid + " Last Name";
         node.mname =  node.userid + " Middle Name";
-        node.state =  node.userid + " State";
-        node.country =  node.userid + " Country";
-        node.zip =  node.userid + " zip";
+        node.location.zip =  node.userid + " zip";
         node.email = node.userid + "@grooveshark.com";
     }
 
