@@ -30,6 +30,7 @@ import org.neo4j.index.lucene.QueryContext;
 import com.sun.jersey.api.client.ClientResponse;
 import com.grooveshark.util.FileUtils;
 import com.grooveshark.jdatastruct.graph.sample.entities.GNode;
+import com.grooveshark.jdatastruct.graph.sample.entities.GEdge;
 
 import java.util.Iterator;
 import java.util.List;
@@ -55,9 +56,11 @@ public class Neo4jRest
     private RestIndex<Node> nodeIndex = null;
     private RestIndex<Relationship> relIndex = null;
     private String nodeKey = null;
-    private String indexTextKey = null;
+    private String relKey = null;
     private String nodeIndexUniquePath = null;
     private String relIndexUniquePath = null;
+    private Map<String, Object> relProps = null;
+    private static Map<String, String> luceneFullText = null;
 
     private String url = null;
 
@@ -84,13 +87,22 @@ public class Neo4jRest
         this.setRelIndex(relInd);
     }
 
+    public static Map<String, String> getLuceneFullText() {
+        if (Neo4jRest.luceneFullText == null) {
+            Neo4jRest.luceneFullText = new HashMap<String, String>();
+            Neo4jRest.luceneFullText.put("provider", "lucene");;
+            Neo4jRest.luceneFullText.put("type", "fulltext");;
+        }
+        return Neo4jRest.luceneFullText;
+    }
+
     public void setNodeIndex(String nodeInd)
         throws Neo4jRestException
     {
         if (this.batchRestAPI == null) {
             throw new Neo4jRestException("Batch Rest API is not instantiated");
         }
-        this.nodeIndex = this.batchRestAPI.index().forNodes(nodeInd);
+        this.nodeIndex = this.batchRestAPI.index().forNodes(nodeInd, Neo4jRest.getLuceneFullText());
         this.nodeIndexUniquePath = this.nodeIndex.indexPath() + "?uniqueness=get_or_create";
     }
 
@@ -100,38 +112,96 @@ public class Neo4jRest
         if (this.batchRestAPI == null) {
             throw new Neo4jRestException("Batch Rest API is not instantiated");
         }
-        this.relIndex = (RestIndex<Relationship>) this.batchRestAPI.index().forRelationships(relInd);
+        this.relIndex = (RestIndex<Relationship>) this.batchRestAPI.index().forRelationships(relInd, Neo4jRest.getLuceneFullText());
         this.relIndexUniquePath = this.relIndex.indexPath() + "?uniqueness=get_or_create";
     }
+
+    public Node getSingleNode(String key, Object value)
+        throws Neo4jRestException
+    {
+        IndexHits<Node> hits = this.nodeIndex.get(key, value);
+        Node result = null;
+        try {
+            if (hits.size() > 1) {
+                throw new Neo4jRestException("Key/Value pair has more than one match. Key: " + key + "; value: " + value);
+            }
+            result = hits.getSingle();
+        } finally {
+            hits.close();
+        }
+        return result;
+    }
+
+    public IndexHits<Node> getNodeIndexHits(String query) {
+        return this.nodeIndex.query(query);
+    }
+
+    public boolean relExists(String key, Object value) {
+        IndexHits<Relationship> hits = this.relIndex.get(key, value);
+        if (hits.size() > 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
 
     public void checkIndexHits(String query) throws Exception {
         IndexHits<Node> hits = this.nodeIndex.query(query);
         try {
             System.out.println("Node size: " + hits.size());
+            for (Node node : hits) {
+                System.out.println("userid: " + node.getId());
+            }
         } finally {
             hits.close();
         }
     }
 
-    public void addToRestRequest(GNode node) {
-        Map<String, Object> nodeData = map("key", this.nodeKey, "value", node.userid, "properties", node.getProps());
+    public RestNode addToRestRequest(Map<String, Object> nodeData) {
         RequestResult result = this.restRequest.post(this.nodeIndexUniquePath, nodeData);
-        RestNode restNode = this.batchRestAPI.createRestNode(result);
-        RestEntity restEntity = (RestEntity) restNode;
-        String uri = restEntity.getUri();
-        Map<String, Object> data = map("key", this.indexTextKey, "value", node.getIndexText(), "uri", uri);
-        System.out.println("node post data:");
-        System.out.println(nodeData);
-        System.out.println("index post data:");
-        System.out.println(data);
-        this.restRequest.post(this.nodeIndex.indexPath(), data);
+        return this.batchRestAPI.createRestNode(result);
+    }
+
+    public RestNode addToRestRequest(int userid) {
+        Map<String, Object> nodeData = nodeData = map("key", this.nodeKey, "value", userid);
+        return this.addToRestRequest(nodeData);
+    }
+
+    public RestNode addToRestRequest(int userid, Map<String, Object> props) {
+        Map<String, Object> nodeData = map("key", this.nodeKey, "value", userid, "properties", props);
+        RestNode restNode = this.addToRestRequest(nodeData);
+        this.addPropsToIndex(restNode, props, this.nodeIndex);
+        return restNode;
+    }
+
+    public <T extends PropertyContainer> void addPropsToIndex(T entity, final Map<String, Object> props, RestIndex<T> index) {
+        final RestEntity restEntity = (RestEntity) entity;
+        final String uri = restEntity.getUri();
+        for (String key : GNode.getIndexKeys()) {
+            final Map<String, Object> data = map("key", key, "value", props.get(key), "uri", uri);
+            this.restRequest.post(index.indexPath(), data);
+        }
     }
 
     public void batchInsert(List<GNode> nodes) {
         for (GNode node :  nodes) {
-            this.addToRestRequest(node);
+            this.addToRestRequest(node.userid, node.getProps());
         }
-        //this.batchRestAPI.executeBatchRequest();
+    }
+
+    public void batchRelInsert(List<GEdge> edges) {
+        for (GEdge edge : edges) {
+            RestNode startNode = this.addToRestRequest(edge.sUserid);
+            RestNode endNode = this.addToRestRequest(edge.eUserid);
+            String relValue = edge.sUserid + "-" + edge.eUserid;
+            Map<String, Object> relData = map("key", this.relKey, "value", relValue, "properties", this.relProps, "start", startNode.getUri(), "end", endNode.getUri(), "type", "KNOWS");
+            this.restRequest.post(this.relIndexUniquePath, relData);
+        }
+    }
+
+    public void executeBatch() {
+        this.batchRestAPI.executeBatchRequest();
     }
 
     /**
@@ -147,15 +217,27 @@ public class Neo4jRest
         return this.nodeKey;
     }
     /**
-     * Setter method for indexTextKey
+     * Setter method for relKey
      */
-    public void setIndexTextKey(String indexTextKey) {
-        this.indexTextKey = indexTextKey;
+    public void setRelKey(String relKey) {
+        this.relKey = relKey;
     }
     /**
-     * Getter method for indexTextKey
+     * Getter method for relKey
      */
-    public String getIndexTextKey() {
-        return this.indexTextKey;
+    public String getRelKey() {
+        return this.relKey;
+    }
+    /**
+     * Setter method for relProps
+     */
+    public void setRelProps(Map<String, Object> relProps) {
+        this.relProps = relProps;
+    }
+    /**
+     * Getter method for relProps
+     */
+    public Map<String, Object> getRelProps() {
+        return this.relProps;
     }
 }
