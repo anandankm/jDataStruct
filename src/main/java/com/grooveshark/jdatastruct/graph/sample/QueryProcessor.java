@@ -30,18 +30,38 @@ public class QueryProcessor
 
     private static enum RelTypes implements RelationshipType { KNOWS };
     private String query = "";
+
+    private String startQuery = "";
     private String mutualQueryString = "";
+    private String mutualMutualQueryString = "";
+    private String mutualFollowingQueryString = "";
+    private String mutualFollowerQueryString = "";
     private String followingQueryString = "";
+    private String followingMutualQueryString = "";
+    private String followingFollowingQueryString = "";
+    private String followingFollowerQueryString = "";
     private String followerQueryString = "";
+    private String followerMutualQueryString = "";
+    private String followerFollowingQueryString = "";
+    private String followerFollowerQueryString = "";
 
     private int baseUserid;
     private Neo4jRest server;
-    private List<Node> mutualNodes;
-    private List<Node> followingNodes;
-    private List<Node> followerNodes;
-    private List<Node> otherNodes;
     private Map<String, Object> params;
 
+    private List<Node> mutualNodes;
+    private List<Node> mutualMutualNodes;
+    private List<Node> mutualFollowingNodes;
+    private List<Node> mutualFollowerNodes;
+    private List<Node> followingNodes;
+    private List<Node> followingMutualNodes;
+    private List<Node> followingFollowingNodes;
+    private List<Node> followingFollowerNodes;
+    private List<Node> followerNodes;
+    private List<Node> followerMutualNodes;
+    private List<Node> followerFollowingNodes;
+    private List<Node> followerFollowerNodes;
+    private List<Node> otherNodes;
 
     public QueryProcessor(int baseUserid, String query) {
         this.baseUserid = baseUserid;
@@ -58,9 +78,25 @@ public class QueryProcessor
          * ...
          * and order by weight
          */
-        this.mutualQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match base-->root,root-->base RETURN root";
-        this.followingQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match base-->root where not(root-->base) RETURN root";
-        this.followerQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match root-->base where not(base-->root) RETURN root";
+        this.startQuery = "START root=node:users({indexQuery}), base=node({baseUserid}) ";
+        this.mutualQueryString = this.startQuery +
+            "match base-->root,root-->base RETURN root";
+        this.mutualMutualQueryString = this.startQuery +
+            "match base-->root-->foaf,foaf-->root,root-->base RETURN foaf";
+        this.mutualFollowingQueryString = this.startQuery +
+            "match base-->root-->foaf,root-->base where not(foaf-->root) RETURN foaf";
+        this.mutualFollowerQueryString = this.startQuery +
+            "match base-->root<--foaf,root-->base where not(root-->foaf) RETURN foaf";
+        this.followingQueryString = this.startQuery +
+            "match base-->root where not(root-->base) RETURN root";
+        this.followingMutualQueryString = this.startQuery +
+            "match base-->root-->foaf, foaf-->root where not(foaf<-->base) and not(root-->base)  RETURN foaf";
+        this.followingFollowingQueryString = this.startQuery +
+            "match base-->root-->foaf where not(foaf<-->base) and not(foaf-->root) and not(root-->base)  RETURN foaf";
+        this.followingFollowerQueryString = this.startQuery +
+            "match base-->root<--foaf where not(root-->base) and not(root-->foaf) and not(base-->foaf) and id(foaf) <> {baseUserid} RETURN foaf";
+        this.followerQueryString = this.startQuery +
+            "match base<--root where not(base-->root) RETURN root";
     }
 
     public QueryProcessor(int baseUserid, String query, Neo4jRest server) {
@@ -70,8 +106,17 @@ public class QueryProcessor
 
     public void initializeResult() {
         this.mutualNodes = new LinkedList<Node>();
+        this.mutualMutualNodes = new LinkedList<Node>();
+        this.mutualFollowingNodes = new LinkedList<Node>();
+        this.mutualFollowerNodes = new LinkedList<Node>();
         this.followingNodes = new LinkedList<Node>();
+        this.followingMutualNodes = new LinkedList<Node>();
+        this.followingFollowingNodes = new LinkedList<Node>();
+        this.followingFollowerNodes = new LinkedList<Node>();
         this.followerNodes = new LinkedList<Node>();
+        this.followerMutualNodes = new LinkedList<Node>();
+        this.followerFollowingNodes = new LinkedList<Node>();
+        this.followerFollowerNodes = new LinkedList<Node>();
         this.otherNodes = new LinkedList<Node>();
     }
 
@@ -79,13 +124,40 @@ public class QueryProcessor
         this.initializeResult();
         Iterator<Node> nodes = this.server.getMatchingNodes(this.mutualQueryString, this.params);
         addToCollection(nodes, this.mutualNodes);
-        System.out.println("mutual size: " + this.mutualNodes.size());
+        System.out.println("Mutual size: " + this.mutualNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.mutualMutualQueryString, this.params);
+        addToCollection(nodes, this.mutualMutualNodes);
+        System.out.println("Mutual Mutual size: " + this.mutualMutualNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.mutualFollowingQueryString, this.params);
+        addToCollection(nodes, this.mutualFollowingNodes);
+        System.out.println("Mutual Following size: " + this.mutualFollowingNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.mutualFollowerQueryString, this.params);
+        addToCollection(nodes, this.mutualFollowerNodes);
+        System.out.println("Mutual Follower size: " + this.mutualFollowerNodes.size());
+
         nodes = this.server.getMatchingNodes(this.followingQueryString, this.params);
         addToCollection(nodes, this.followingNodes);
-        System.out.println("following size: " + this.followingNodes.size());
+        System.out.println("Following size: " + this.followingNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.followingMutualQueryString, this.params);
+        addToCollection(nodes, this.followingMutualNodes);
+        System.out.println("Following Mutual size: " + this.followingMutualNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.followingFollowingQueryString, this.params);
+        addToCollection(nodes, this.followingFollowingNodes);
+        System.out.println("Following Following size: " + this.followingFollowingNodes.size());
+
+        nodes = this.server.getMatchingNodes(this.followingFollowerQueryString, this.params);
+        addToCollection(nodes, this.followingFollowerNodes);
+        System.out.println("Following Follower size: " + this.followingFollowerNodes.size());
+
         nodes = this.server.getMatchingNodes(this.followerQueryString, this.params);
         addToCollection(nodes, this.followerNodes);
         System.out.println("follower size: " + this.followerNodes.size());
+
     }
 
     public void traverseOneDeg() {
