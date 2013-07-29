@@ -3,27 +3,47 @@ package com.grooveshark.jdatastruct.graph.sample.entities;
 
 import java.util.Map;
 import java.util.HashMap;
+import java.util.HashSet;
 
 public class GNode
 {
     public int userid;
+
+    public static final String USERID_KEY = "userid";
+    public static final String USERNAME_KEY = "username";
+    public static final String FNAME_KEY = "username";
+    public static final String LNAME_KEY = "username";
+    public static final String MNAME_KEY = "username";
+    public static final String LAT_KEY = "latitude";
+    public static final String LON_KEY = "longitude";
+
     public String username = "";
     public String fname = "";
     public String lname = "";
     public String mname = "";
-    public String city = "";
-    public String state = "";
-    public String country = "";
-    public String zip = "";
+    public Location location;
     public String email = "";
-    public Float latitude;
-    public Float longitude;
     public Map<String, Object> props = new HashMap<String, Object>();
-    public String indexText = "";
+    public static HashSet<String> indexKeys = null;
 
     public GNode(int userid, String username) {
         this.userid = userid;
         this.username = username;
+    }
+
+    public static HashSet<String> getIndexKeys() {
+        if (GNode.indexKeys == null) {
+            GNode.indexKeys = new HashSet<String>();
+            GNode.indexKeys.add("username");
+            GNode.indexKeys.add("fname");
+            GNode.indexKeys.add("lname");
+            GNode.indexKeys.add("mname");
+            GNode.indexKeys.add("city");
+            GNode.indexKeys.add("state");
+            GNode.indexKeys.add("country");
+            GNode.indexKeys.add("email");
+        }
+        return GNode.indexKeys;
     }
 
     public Map<String, Object> getProps() {
@@ -32,31 +52,15 @@ public class GNode
             this.props.put("fname", this.fname);
             this.props.put("lname", this.fname);
             this.props.put("mname", this.mname);
-            this.props.put("city", this.city);
-            this.props.put("state", this.state);
-            this.props.put("country", this.country);
-            this.props.put("zip", this.zip);
+            this.props.put("city", this.location.city);
+            this.props.put("state", this.location.state);
+            this.props.put("country", this.location.country);
+            this.props.put("zip", this.location.zip);
             this.props.put("email", this.email);
-            this.props.put("latitude", this.latitude);
-            this.props.put("longitude", this.longitude);
+            this.props.put("latitude", this.location.latitude);
+            this.props.put("longitude", this.location.longitude);
         }
         return this.props;
-    }
-
-    public String getIndexText() {
-        if (this.indexText.isEmpty()) {
-            StringBuilder fullText = new StringBuilder();
-            fullText.append(this.username);
-            fullText.append(this.fname);
-            fullText.append(this.fname);
-            fullText.append(this.mname);
-            fullText.append(this.city);
-            fullText.append(this.state);
-            fullText.append(this.country);
-            fullText.append(this.email);
-            this.indexText = fullText.toString();
-        }
-        return this.indexText;
     }
 
     public String toString() {
@@ -65,12 +69,12 @@ public class GNode
                       this.fname + "," +
                       this.lname + "," +
                       this.mname + "," +
-                      this.city + "," +
-                      this.state + "," +
-                      this.country + "," +
-                      this.zip + "," +
+                      this.location.city + "," +
+                      this.location.state + "," +
+                      this.location.country + "," +
+                      this.location.zip + "," +
                       this.email + "," +
-                      this.latitude + "," +
-                      this.longitude + "]";
+                      this.location.latitude + "," +
+                      this.location.longitude + "]";
     }
 }
