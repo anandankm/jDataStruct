@@ -9,8 +9,12 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.index.lucene.QueryContext;
 
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.MapUtil.map;
+
+import java.util.Map;
+import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
 
@@ -26,29 +30,66 @@ public class QueryProcessor
 
     private static enum RelTypes implements RelationshipType { KNOWS };
     private String query = "";
+    private String mutualQueryString = "";
+    private String followingQueryString = "";
+    private String followerQueryString = "";
 
     private int baseUserid;
     private Neo4jRest server;
-    private List<Node> mutualNodes = new LinkedList<Node>();
-    private List<Node> followingNodes = new LinkedList<Node>();
-    private List<Node> followerNodes = new LinkedList<Node>();
+    private List<Node> mutualNodes;
+    private List<Node> followingNodes;
+    private List<Node> followerNodes;
+    private List<Node> otherNodes;
+    private Map<String, Object> params;
 
 
     public QueryProcessor(int baseUserid, String query) {
         this.baseUserid = baseUserid;
         this.query = query;
+        this.params = map("indexQuery", this.query, "baseUserid", this.baseUserid);
+        /**
+         * TODO: Union these queries into a single query.
+         *
+         * with each query having a weight like
+         *
+         * RETURN root, "1" as weight
+         * RETURN root, "2" as weight
+         * ...
+         * ...
+         * and order by weight
+         */
+        this.mutualQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match base-->root,root-->base RETURN root";
+        this.followingQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match base-->root where not(root-->base) RETURN root";
+        this.followerQueryString = "START root=node:users({indexQuery}), base=node({baseUserid}) match root-->base where not(base-->root) RETURN root";
     }
 
     public QueryProcessor(int baseUserid, String query, Neo4jRest server) {
-        this.baseUserid = baseUserid;
-        this.query = query;
+        this(baseUserid, query);
         this.server = server;
     }
 
-    public void processQuery()
-        throws Neo4jRestException
-    {
-        Node baseNode = this.server.getSingleNode(GNode.USERID_KEY, this.baseUserid);
+    public void initializeResult() {
+        this.mutualNodes = new LinkedList<Node>();
+        this.followingNodes = new LinkedList<Node>();
+        this.followerNodes = new LinkedList<Node>();
+        this.otherNodes = new LinkedList<Node>();
+    }
+
+    public void traverseCypher() {
+        this.initializeResult();
+        Iterator<Node> nodes = this.server.getMatchingNodes(this.mutualQueryString, this.params);
+        addToCollection(nodes, this.mutualNodes);
+        System.out.println("mutual size: " + this.mutualNodes.size());
+        nodes = this.server.getMatchingNodes(this.followingQueryString, this.params);
+        addToCollection(nodes, this.followingNodes);
+        System.out.println("following size: " + this.followingNodes.size());
+        nodes = this.server.getMatchingNodes(this.followerQueryString, this.params);
+        addToCollection(nodes, this.followerNodes);
+        System.out.println("follower size: " + this.followerNodes.size());
+    }
+
+    public void traverseOneDeg() {
+        this.initializeResult();
         IndexHits<Node> hits = this.server.getNodeIndexHits(this.query);
         try {
             System.out.println("Hits size: " + hits.size());
@@ -64,15 +105,17 @@ public class QueryProcessor
                     this.followingNodes.add(node);
                 } else if (!followingExists && followerExists) {
                     this.followerNodes.add(node);
+                } else {
+                    this.otherNodes.add(node);
                 }
+                System.out.println("Node property username: " + node.getProperty("username"));
             }
-            System.out.println("mutual size: " + this.mutualNodes.size());
-            System.out.println("following size: " + this.followingNodes.size());
-            System.out.println("follower size: " + this.followerNodes.size());
         } finally {
             hits.close();
         }
-
+        System.out.println("mutual size: " + this.mutualNodes.size());
+        System.out.println("following size: " + this.followingNodes.size());
+        System.out.println("follower size: " + this.followerNodes.size());
     }
 
     /**
