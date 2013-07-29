@@ -25,7 +25,7 @@ public class SampleNodeTest
 
     private NodeParser parser;
 
-    //@Before
+    @Before
     public void nodeParser() {
         try {
             System.out.println("Parsing node & location files");
@@ -36,7 +36,7 @@ public class SampleNodeTest
         }
     }
 
-    //@Test
+    @Test
     public void testNeo4jRestBatchInsert() {
         try {
             System.out.println("Setting up server");
@@ -50,28 +50,6 @@ public class SampleNodeTest
             server.batchRelInsert(this.parser.edges);
             server.executeBatch();
             float elapsed = (System.currentTimeMillis() - start)/(float) 1000;
-            System.out.println("Done. [" + elapsed + " secs]");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            fail("Failed to test neo4j rest instantiation: " + ex.getMessage());
-        }
-    }
-
-    @Test
-    public void testQuery() {
-        try {
-            System.out.println("Setting up server");
-            Neo4jRest server = new Neo4jRest(SERVER_URI, NODE_INDEX, REL_INDEX);
-            server.setNodeKey(NODE_KEY);
-            server.setRelKey(REL_KEY);
-            server.setRelProps(REL_PROPS);
-            long start = System.currentTimeMillis();
-            float elapsed = (System.currentTimeMillis() - start)/(float) 1000;
-            String query = "username:*oNi*";
-            String key = "userid";
-            int val =1;
-            server.getSingleNode(key, val);
-            server.checkIndexHits(query);
             System.out.println("Done. [" + elapsed + " secs]");
         } catch (Exception ex) {
             ex.printStackTrace();
