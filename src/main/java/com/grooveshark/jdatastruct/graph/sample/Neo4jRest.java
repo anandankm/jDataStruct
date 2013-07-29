@@ -9,6 +9,7 @@ import org.neo4j.rest.graphdb.batch.RecordingRestRequest;
 import org.neo4j.rest.graphdb.batch.BatchRestAPI;
 import org.neo4j.rest.graphdb.batch.BatchCallback;
 import org.neo4j.rest.graphdb.batch.RestOperations;
+import org.neo4j.rest.graphdb.query.RestCypherQueryEngine;
 import org.neo4j.rest.graphdb.RestGraphDatabase;
 import org.neo4j.rest.graphdb.entity.RestNode;
 import org.neo4j.rest.graphdb.entity.RestEntity;
@@ -61,6 +62,7 @@ public class Neo4jRest
     private String relIndexUniquePath = null;
     private Map<String, Object> relProps = null;
     private static Map<String, String> luceneFullText = null;
+    private RestCypherQueryEngine queryEngine = null;
 
     private String url = null;
 
@@ -143,6 +145,13 @@ public class Neo4jRest
         } else {
             return false;
         }
+    }
+
+    public Iterator<Node> getMatchingNodes(String queryString, Map<String, Object> params) {
+        if (this.queryEngine == null) {
+            this.queryEngine = new RestCypherQueryEngine(this.restAPI);
+        }
+        return this.queryEngine.query(queryString, params).to(Node.class).iterator();
     }
 
 
