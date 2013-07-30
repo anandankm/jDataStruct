@@ -10,6 +10,8 @@ public class GNode
 {
     public Long userid;
 
+    public static final String NODE_INDEX = "users";
+
     public static final String USERID_KEY = "userid";
     public static final String USERNAME_KEY = "username";
     public static final String FNAME_KEY = "fname";

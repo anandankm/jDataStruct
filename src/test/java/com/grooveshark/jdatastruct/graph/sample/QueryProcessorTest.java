@@ -5,7 +5,9 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.map;
+
+import com.grooveshark.jdatastruct.graph.sample.entities.GEdge;
+import com.grooveshark.jdatastruct.graph.sample.entities.GNode;
 
 import org.apache.log4j.Logger;
 import com.grooveshark.util.StringUtils;
@@ -15,11 +17,7 @@ public class QueryProcessorTest
     public static final Logger log = Logger.getLogger(QueryProcessorTest.class);
 
     public static final String SERVER_URI = "http://localhost:7474/db/data";
-    public static final String NODE_INDEX = "users";
-    public static final String REL_INDEX = "followers";
-    public static final String NODE_KEY = "userid";
-    public static final String REL_KEY = "edge";
-    public static final Map<String, Object> REL_PROPS = map("name", "follows");
+
     private Neo4jRest server;
     private QueryProcessor processor;
 
@@ -27,10 +25,10 @@ public class QueryProcessorTest
     public void setup() {
         try {
             System.out.println("Setting up server");
-            this.server = new Neo4jRest(SERVER_URI, NODE_INDEX, REL_INDEX);
-            this.server.setNodeKey(NODE_KEY);
-            this.server.setRelKey(REL_KEY);
-            this.server.setRelProps(REL_PROPS);
+            this.server = new Neo4jRest(SERVER_URI, GNode.NODE_INDEX, GEdge.REL_INDEX);
+            this.server.setNodeKey(GNode.USERID_KEY);
+            this.server.setRelKey(GEdge.EDGE_INDEX_KEY);
+            this.server.setRelProps(GEdge.REL_PROPS);
             int baseUserid = 1;
             String indexQuery = "username:*oni*";
             this.processor = new QueryProcessor(baseUserid, indexQuery, this.server);
