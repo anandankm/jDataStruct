@@ -49,7 +49,7 @@ public class QueryProcessor
     private Neo4jRest server;
     private Map<String, Object> params;
 
-    private List<Node> mutualNodes;
+    private List<Node> resultNodes;
     private List<Node> mutualMutualNodes;
     private List<Node> mutualFollowingNodes;
     private List<Node> mutualFollowerNodes;
@@ -97,6 +97,12 @@ public class QueryProcessor
             "match base-->root<--foaf where not(root-->base) and not(root-->foaf) and not(base-->foaf) and id(foaf) <> {baseUserid} RETURN foaf";
         this.followerQueryString = this.startQuery +
             "match base<--root where not(base-->root) RETURN root";
+        this.followerMutualQueryString = this.startQuery +
+            "match base<--root-->foaf,foaf-->root where not(base-->root) and not(foaf<-->base) RETURN foaf";
+        this.followerFollowerQueryString = this.startQuery +
+            "match base<--root<--foaf where not(root-->foaf) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
+        this.followerFollowingQueryString = this.startQuery +
+            "match base<--root-->foaf where not(foaf-->root) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
     }
 
     public QueryProcessor(int baseUserid, String query, Neo4jRest server) {
@@ -105,6 +111,7 @@ public class QueryProcessor
     }
 
     public void initializeResult() {
+        this.resultNodes = new LinkedList<Node>();
         this.mutualNodes = new LinkedList<Node>();
         this.mutualMutualNodes = new LinkedList<Node>();
         this.mutualFollowingNodes = new LinkedList<Node>();
@@ -120,44 +127,38 @@ public class QueryProcessor
         this.otherNodes = new LinkedList<Node>();
     }
 
+    public void fillinNodes(List<Node> fillin, String queryString, String type)
+    {
+        System.out.println(type + "-----------------");
+        Iterator<Node> itr = this.server.getMatchingNodes(queryString, this.params);
+        while (itr.hasNext()) {
+            Node node = (Node) itr.next();
+            System.out.println("latitude: " + node.getProperty("latitude")
+                    + "; longitude: " + node.getProperty("longitude"));
+        }
+        /*
+        Iterator<Node> nodes = this.server.getMatchingNodes(queryString, this.params);
+        addToCollection(nodes, fillin);
+        System.out.println(type + " size: " + fillin.size());
+        */
+    }
+
     public void traverseCypher() {
         this.initializeResult();
-        Iterator<Node> nodes = this.server.getMatchingNodes(this.mutualQueryString, this.params);
-        addToCollection(nodes, this.mutualNodes);
-        System.out.println("Mutual size: " + this.mutualNodes.size());
+        this.fillinNodes(this.mutualNodes, this.mutualQueryString, "Mutual");
+        this.fillinNodes(this.mutualMutualNodes, this.mutualMutualQueryString, "mutualMutual");
+        this.fillinNodes(this.mutualFollowingNodes, this.mutualFollowingQueryString, "mutualFollowing");
+        this.fillinNodes(this.mutualFollowerNodes, this.mutualFollowerQueryString, "mutualFollower");
 
-        nodes = this.server.getMatchingNodes(this.mutualMutualQueryString, this.params);
-        addToCollection(nodes, this.mutualMutualNodes);
-        System.out.println("Mutual Mutual size: " + this.mutualMutualNodes.size());
+        this.fillinNodes(this.followingNodes, this.followingQueryString, "following");
+        this.fillinNodes(this.followingMutualNodes, this.followingMutualQueryString, "followingMutual");
+        this.fillinNodes(this.followingFollowingNodes, this.followingFollowingQueryString, "followingFollowing");
+        this.fillinNodes(this.followingFollowerNodes, this.followingFollowerQueryString, "followingFollower");
 
-        nodes = this.server.getMatchingNodes(this.mutualFollowingQueryString, this.params);
-        addToCollection(nodes, this.mutualFollowingNodes);
-        System.out.println("Mutual Following size: " + this.mutualFollowingNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.mutualFollowerQueryString, this.params);
-        addToCollection(nodes, this.mutualFollowerNodes);
-        System.out.println("Mutual Follower size: " + this.mutualFollowerNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.followingQueryString, this.params);
-        addToCollection(nodes, this.followingNodes);
-        System.out.println("Following size: " + this.followingNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.followingMutualQueryString, this.params);
-        addToCollection(nodes, this.followingMutualNodes);
-        System.out.println("Following Mutual size: " + this.followingMutualNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.followingFollowingQueryString, this.params);
-        addToCollection(nodes, this.followingFollowingNodes);
-        System.out.println("Following Following size: " + this.followingFollowingNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.followingFollowerQueryString, this.params);
-        addToCollection(nodes, this.followingFollowerNodes);
-        System.out.println("Following Follower size: " + this.followingFollowerNodes.size());
-
-        nodes = this.server.getMatchingNodes(this.followerQueryString, this.params);
-        addToCollection(nodes, this.followerNodes);
-        System.out.println("follower size: " + this.followerNodes.size());
-
+        this.fillinNodes(this.followerNodes, this.followerQueryString, "follower");
+        this.fillinNodes(this.followerMutualNodes, this.followerMutualQueryString, "followerMutual");
+        this.fillinNodes(this.followerFollowingNodes, this.followerFollowingQueryString, "followerFollowing");
+        this.fillinNodes(this.followerFollowerNodes, this.followerFollowerQueryString, "followerFollower");
     }
 
     public void traverseOneDeg() {
