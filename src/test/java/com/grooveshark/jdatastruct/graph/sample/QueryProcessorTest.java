@@ -49,7 +49,7 @@ public class QueryProcessorTest
             System.out.println("Done. [" + elapsed + " ms]");
         } catch (Exception ex) {
             ex.printStackTrace();
-            fail("Failed to test neo4j rest instantiation: " + ex.getMessage());
+            fail("Failed to test simple query: " + ex.getMessage());
         }
     }
 
@@ -63,7 +63,7 @@ public class QueryProcessorTest
             System.out.println("Done. [" + elapsed + " ms]");
         } catch (Exception ex) {
             ex.printStackTrace();
-            fail("Failed to test neo4j rest instantiation: " + ex.getMessage());
+            fail("Failed to test Cypher query for foaf: " + ex.getMessage());
         }
     }
 
