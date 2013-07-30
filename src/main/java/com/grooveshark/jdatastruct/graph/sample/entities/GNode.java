@@ -34,6 +34,10 @@ public class GNode
     public Map<String, Object> props = new HashMap<String, Object>();
     public static HashSet<String> indexKeys = null;
 
+    public GNode(long userid) {
+        this.userid = userid;
+    }
+
     public GNode(long userid, String username) {
         this.userid = userid;
         this.username = username;
