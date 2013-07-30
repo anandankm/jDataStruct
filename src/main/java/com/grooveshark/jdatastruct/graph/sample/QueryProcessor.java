@@ -14,13 +14,16 @@ import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 import java.util.Map;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.LinkedList;
+import java.util.TreeSet;
 
 import com.grooveshark.util.FileUtils;
 import com.grooveshark.jdatastruct.graph.sample.entities.GNode;
 import com.grooveshark.jdatastruct.graph.sample.entities.GEdge;
+import com.grooveshark.jdatastruct.graph.sample.entities.NodeResult;
 
 
 public class QueryProcessor 
@@ -31,39 +34,33 @@ public class QueryProcessor
     private static enum RelTypes implements RelationshipType { KNOWS };
     private String query = "";
 
-    private String startQuery = "";
-    private String mutualQueryString = "";
-    private String mutualMutualQueryString = "";
-    private String mutualFollowingQueryString = "";
-    private String mutualFollowerQueryString = "";
-    private String followingQueryString = "";
-    private String followingMutualQueryString = "";
-    private String followingFollowingQueryString = "";
-    private String followingFollowerQueryString = "";
-    private String followerQueryString = "";
-    private String followerMutualQueryString = "";
-    private String followerFollowingQueryString = "";
-    private String followerFollowerQueryString = "";
+    private static String startQuery = "START root=node:users({indexQuery}), base=node({baseUserid}) ";
+    private static String mutualQueryString = startQuery + "match base-->root,root-->base RETURN root";
+    private static String mutualMutualQueryString = startQuery + "match base-->root-->foaf,foaf-->root,root-->base RETURN foaf";
+    private static String mutualFollowingQueryString = startQuery + "match base-->root-->foaf,root-->base where not(foaf-->root) RETURN foaf";
+    private static String mutualFollowerQueryString = startQuery + "match base-->root<--foaf,root-->base where not(root-->foaf) RETURN foaf";
+    private static String followingQueryString = startQuery + "match base-->root where not(root-->base) RETURN root";
+    private static String followingMutualQueryString = startQuery + "match base-->root-->foaf, foaf-->root where not(foaf<-->base) and not(root-->base)  RETURN foaf";
+    private static String followingFollowingQueryString = startQuery + "match base-->root-->foaf where not(foaf<-->base) and not(foaf-->root) and not(root-->base)  RETURN foaf";
+    private static String followingFollowerQueryString = startQuery + "match base-->root<--foaf where not(root-->base) and not(root-->foaf) and not(base-->foaf) and id(foaf) <> {baseUserid} RETURN foaf";
+    private static String followerQueryString = startQuery + "match base<--root where not(base-->root) RETURN root";
+    private static String followerMutualQueryString = startQuery + "match base<--root-->foaf,foaf-->root where not(base-->root) and not(foaf<-->base) RETURN foaf";
+    private static String followerFollowerQueryString = startQuery + "match base<--root<--foaf where not(root-->foaf) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
+    private static String followerFollowingQueryString = startQuery + "match base<--root-->foaf where not(foaf-->root) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
 
-    private int baseUserid;
+    private long baseUserid;
+    private GNode baseNode;
     private Neo4jRest server;
     private Map<String, Object> params;
+    private Map<Float, String> queryStringWeight;
 
-    private List<Node> resultNodes;
-    private List<Node> mutualMutualNodes;
-    private List<Node> mutualFollowingNodes;
-    private List<Node> mutualFollowerNodes;
+    private TreeSet<NodeResult> nodeResults = new TreeSet<NodeResult>();
+    private List<Node> mutualNodes;
     private List<Node> followingNodes;
-    private List<Node> followingMutualNodes;
-    private List<Node> followingFollowingNodes;
-    private List<Node> followingFollowerNodes;
     private List<Node> followerNodes;
-    private List<Node> followerMutualNodes;
-    private List<Node> followerFollowingNodes;
-    private List<Node> followerFollowerNodes;
     private List<Node> otherNodes;
 
-    public QueryProcessor(int baseUserid, String query) {
+    public QueryProcessor(long baseUserid, String query) {
         this.baseUserid = baseUserid;
         this.query = query;
         this.params = map("indexQuery", this.query, "baseUserid", this.baseUserid);
@@ -78,87 +75,60 @@ public class QueryProcessor
          * ...
          * and order by weight
          */
-        this.startQuery = "START root=node:users({indexQuery}), base=node({baseUserid}) ";
-        this.mutualQueryString = this.startQuery +
-            "match base-->root,root-->base RETURN root";
-        this.mutualMutualQueryString = this.startQuery +
-            "match base-->root-->foaf,foaf-->root,root-->base RETURN foaf";
-        this.mutualFollowingQueryString = this.startQuery +
-            "match base-->root-->foaf,root-->base where not(foaf-->root) RETURN foaf";
-        this.mutualFollowerQueryString = this.startQuery +
-            "match base-->root<--foaf,root-->base where not(root-->foaf) RETURN foaf";
-        this.followingQueryString = this.startQuery +
-            "match base-->root where not(root-->base) RETURN root";
-        this.followingMutualQueryString = this.startQuery +
-            "match base-->root-->foaf, foaf-->root where not(foaf<-->base) and not(root-->base)  RETURN foaf";
-        this.followingFollowingQueryString = this.startQuery +
-            "match base-->root-->foaf where not(foaf<-->base) and not(foaf-->root) and not(root-->base)  RETURN foaf";
-        this.followingFollowerQueryString = this.startQuery +
-            "match base-->root<--foaf where not(root-->base) and not(root-->foaf) and not(base-->foaf) and id(foaf) <> {baseUserid} RETURN foaf";
-        this.followerQueryString = this.startQuery +
-            "match base<--root where not(base-->root) RETURN root";
-        this.followerMutualQueryString = this.startQuery +
-            "match base<--root-->foaf,foaf-->root where not(base-->root) and not(foaf<-->base) RETURN foaf";
-        this.followerFollowerQueryString = this.startQuery +
-            "match base<--root<--foaf where not(root-->foaf) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
-        this.followerFollowingQueryString = this.startQuery +
-            "match base<--root-->foaf where not(foaf-->root) and not(base-->root) and not(foaf<-->base) and id(foaf) <> {baseUserid} RETURN foaf";
+        this.queryStringWeight = new HashMap<Float, String>();
+        Float weight = 1.0f;
+        this.queryStringWeight.put(weight++, mutualQueryString);
+        this.queryStringWeight.put(weight++, followingQueryString);
+        this.queryStringWeight.put(weight++, followerQueryString);
+        this.queryStringWeight.put(weight++, mutualMutualQueryString);
+        this.queryStringWeight.put(weight++, mutualFollowingQueryString);
+        this.queryStringWeight.put(weight++, mutualFollowerQueryString);
+        this.queryStringWeight.put(weight++, followingMutualQueryString);
+        this.queryStringWeight.put(weight++, followingFollowingQueryString);
+        this.queryStringWeight.put(weight++, followingFollowerQueryString);
+        this.queryStringWeight.put(weight++, followerMutualQueryString);
+        this.queryStringWeight.put(weight++, followerFollowerQueryString);
+        this.queryStringWeight.put(weight++, followerFollowingQueryString);
     }
 
-    public QueryProcessor(int baseUserid, String query, Neo4jRest server) {
+    public QueryProcessor(long baseUserid, String query, Neo4jRest server)
+        throws Neo4jRestException
+    {
         this(baseUserid, query);
         this.server = server;
+        this.baseNode = new GNode( this.server.getSingleNode(GNode.USERID_KEY, this.baseUserid) );
     }
 
     public void initializeResult() {
-        this.resultNodes = new LinkedList<Node>();
+        this.nodeResults = new TreeSet<NodeResult>();
         this.mutualNodes = new LinkedList<Node>();
-        this.mutualMutualNodes = new LinkedList<Node>();
-        this.mutualFollowingNodes = new LinkedList<Node>();
-        this.mutualFollowerNodes = new LinkedList<Node>();
         this.followingNodes = new LinkedList<Node>();
-        this.followingMutualNodes = new LinkedList<Node>();
-        this.followingFollowingNodes = new LinkedList<Node>();
-        this.followingFollowerNodes = new LinkedList<Node>();
         this.followerNodes = new LinkedList<Node>();
-        this.followerMutualNodes = new LinkedList<Node>();
-        this.followerFollowingNodes = new LinkedList<Node>();
-        this.followerFollowerNodes = new LinkedList<Node>();
         this.otherNodes = new LinkedList<Node>();
     }
 
-    public void fillinNodes(List<Node> fillin, String queryString, String type)
+    public void fillinNodes(Float weight)
     {
-        System.out.println(type + "-----------------");
-        Iterator<Node> itr = this.server.getMatchingNodes(queryString, this.params);
+        Iterator<Node> itr = this.server.getMatchingNodes(this.queryStringWeight.get(weight), this.params);
         while (itr.hasNext()) {
-            Node node = (Node) itr.next();
-            System.out.println("latitude: " + node.getProperty("latitude")
-                    + "; longitude: " + node.getProperty("longitude"));
+            GNode node = new GNode( (Node) itr.next() );
+            NodeResult nodeResult = new NodeResult(weight, node);
+            nodeResult.setDistanceFromBase(this.baseNode);
+            this.nodeResults.add(nodeResult);
         }
-        /*
-        Iterator<Node> nodes = this.server.getMatchingNodes(queryString, this.params);
-        addToCollection(nodes, fillin);
-        System.out.println(type + " size: " + fillin.size());
-        */
     }
 
     public void traverseCypher() {
         this.initializeResult();
-        this.fillinNodes(this.mutualNodes, this.mutualQueryString, "Mutual");
-        this.fillinNodes(this.mutualMutualNodes, this.mutualMutualQueryString, "mutualMutual");
-        this.fillinNodes(this.mutualFollowingNodes, this.mutualFollowingQueryString, "mutualFollowing");
-        this.fillinNodes(this.mutualFollowerNodes, this.mutualFollowerQueryString, "mutualFollower");
-
-        this.fillinNodes(this.followingNodes, this.followingQueryString, "following");
-        this.fillinNodes(this.followingMutualNodes, this.followingMutualQueryString, "followingMutual");
-        this.fillinNodes(this.followingFollowingNodes, this.followingFollowingQueryString, "followingFollowing");
-        this.fillinNodes(this.followingFollowerNodes, this.followingFollowerQueryString, "followingFollower");
-
-        this.fillinNodes(this.followerNodes, this.followerQueryString, "follower");
-        this.fillinNodes(this.followerMutualNodes, this.followerMutualQueryString, "followerMutual");
-        this.fillinNodes(this.followerFollowingNodes, this.followerFollowingQueryString, "followerFollowing");
-        this.fillinNodes(this.followerFollowerNodes, this.followerFollowerQueryString, "followerFollower");
+        for (Float weight : this.queryStringWeight.keySet()) {
+            this.fillinNodes(weight);
+        }
+        System.out.println("Node results size: " + this.nodeResults.size());
+        Iterator<NodeResult> itr = this.nodeResults.iterator();
+        while(itr.hasNext()) {
+            NodeResult nodeResult = (NodeResult) itr.next();
+            System.out.println(nodeResult.weight + "\t" + nodeResult.node.userid + "\t" + nodeResult.node.username);
+        }
     }
 
     public void traverseOneDeg() {
@@ -218,13 +188,13 @@ public class QueryProcessor
     /**
      * Setter method for baseUserid
      */
-    public void setBaseUserid(int baseUserid) {
+    public void setBaseUserid(long baseUserid) {
         this.baseUserid = baseUserid;
     }
     /**
      * Getter method for baseUserid
      */
-    public int getBaseUserid() {
+    public long getBaseUserid() {
         return this.baseUserid;
     }
 }
