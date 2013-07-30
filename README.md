@@ -2,8 +2,8 @@ jDataStruct
 ===========
 
 Graphs:
-Implementation to find friends and friend-of-a-friend (foaf) using Neo4j Java REST API
-Using Rest API is useful to load data into neo4j using hadoop and query neo4j from various
+Implementation to find friends and friend-of-a-friend (foaf) using Neo4j Java REST API.
+Rest API is useful to load data into neo4j using hadoop and query neo4j from various
 front facing servers.
 
 * Download neo4j community version.
@@ -12,7 +12,9 @@ front facing servers.
 * Query sample friends/foaf nodes with Natural Ordering: mvn -Dtest=QueryProcessor test
 
 
-Dependencies:
+Dependencies
+============
+
 Maven:
   * Maven version > 2.0
 
