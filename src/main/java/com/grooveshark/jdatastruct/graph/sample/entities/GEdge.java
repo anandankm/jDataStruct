@@ -2,10 +2,10 @@ package com.grooveshark.jdatastruct.graph.sample.entities;
 
 public class GEdge
 {
-    public int sUserid;
-    public int eUserid;
+    public long sUserid;
+    public long eUserid;
     public static final String EDGE_INDEX_KEY = "edge";
-    public GEdge(int sUserid, int eUserid) {
+    public GEdge(long sUserid, long eUserid) {
         this.sUserid = sUserid;
         this.eUserid = eUserid;
     }

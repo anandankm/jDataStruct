@@ -23,7 +23,7 @@ public class NodeParser
     public List<String> nodeFileLines;
     public List<String> locationLines;
 
-    public HashMap<String, Integer> friendsToBase = new HashMap<String, Integer>();
+    public HashMap<String, Long> friendsToBase = new HashMap<String, Long>();
     public HashMap<String, String> locationMap = new HashMap<String, String>();
     public GNode baseNode;
 
@@ -91,7 +91,7 @@ public class NodeParser
             String[] splits = line.split("\t");
             splits[0] = splits[0].trim();
             if (StringUtils.isInteger(splits[0])) {
-                int userid = Integer.parseInt(splits[0]);
+                long userid = Long.parseLong(splits[0]);
                 String username = splits[1].trim();
                 GNode node = new GNode(userid, username);
                 this.nodes.add(node);
@@ -109,7 +109,7 @@ public class NodeParser
                                           usernameSplits[1] + " " +
                                           usernameSplits[2];
                     if (!this.friendsToBase.isEmpty() && this.friendsToBase.containsKey(friendsUname)) {
-                        int friendsUserid = this.friendsToBase.get(friendsUname);
+                        long friendsUserid = this.friendsToBase.get(friendsUname);
                         this.createEdges(usernameSplits[3].trim(), friendsUserid, userid);
                     }
                 }
@@ -127,7 +127,7 @@ public class NodeParser
         }
     }
 
-    public void createEdges(String type, int sUserid, int eUserid) {
+    public void createEdges(String type, long sUserid, long eUserid) {
         GEdge edge = null;
         if (type.equalsIgnoreCase("Mutual") || type.equalsIgnoreCase("Following")) {
             edge = new GEdge(sUserid, eUserid);

@@ -172,12 +172,12 @@ public class Neo4jRest
         return this.batchRestAPI.createRestNode(result);
     }
 
-    public RestNode addToRestRequest(int userid) {
+    public RestNode addToRestRequest(long userid) {
         Map<String, Object> nodeData = nodeData = map("key", this.nodeKey, "value", userid);
         return this.addToRestRequest(nodeData);
     }
 
-    public RestNode addToRestRequest(int userid, Map<String, Object> props) {
+    public RestNode addToRestRequest(long userid, Map<String, Object> props) {
         Map<String, Object> nodeData = map("key", this.nodeKey, "value", userid, "properties", props);
         RestNode restNode = this.addToRestRequest(nodeData);
         this.addPropsToIndex(restNode, props, this.nodeIndex);
